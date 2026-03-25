@@ -196,8 +196,10 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Message error:', error);
+    // Return a 200 with error field to prevent Railway/Cloudflare from intercepting 500s as 503 Service Unavailable
     return NextResponse.json({ 
-      error: `Internal server error: ${error?.message || String(error)}` 
-    }, { status: 500 });
+      error: `API Error: ${error?.message || String(error)}`,
+      details: error?.error || null
+    }, { status: 200 });
   }
 }

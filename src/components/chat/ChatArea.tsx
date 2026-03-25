@@ -82,8 +82,16 @@ export default function ChatArea({
         });
 
         if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || 'Failed to send message');
+          let errorMsg = 'Failed to send message';
+          try {
+            const err = await response.json();
+            errorMsg = err.error || errorMsg;
+          } catch {
+            // If it's not JSON (like a 503 HTML/Text page from Railway), get the raw text
+            const text = await response.text();
+            errorMsg = text.slice(0, 100) || response.statusText;
+          }
+          throw new Error(errorMsg);
         }
 
         if (!response.body) {
