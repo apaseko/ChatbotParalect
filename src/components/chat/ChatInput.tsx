@@ -189,7 +189,7 @@ export default function ChatInput({
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-card/95 backdrop-blur-xl border-border/50">
-              <SelectItem value="gpt-4o">{process.env.NEXT_PUBLIC_OPENAI_MODEL || 'Llama 3.2 Vision'}</SelectItem>
+              <SelectItem value="gpt-4o">Llama 3.2 Vision</SelectItem>
               <SelectItem value="gemini-2.0-flash">Gemini 2.0</SelectItem>
             </SelectContent>
           </Select>
