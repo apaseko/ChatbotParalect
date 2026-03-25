@@ -22,11 +22,12 @@ interface LLMMessage {
 export async function streamOpenAI(
   messages: Message[],
   documentContext?: string,
-  onComplete?: (fullContent: string) => void
+  onComplete?: (fullContent: string) => void,
+  modelOverride?: string
 ): Promise<ReadableStream<Uint8Array>> {
   const formattedMessages: LLMMessage[] = [];
 
-  const selectedModel = process.env.OPENAI_MODEL || 'gpt-4o';
+  const selectedModel = modelOverride || process.env.OPENAI_MODEL || 'gpt-4o';
   // We assume a model supports vision if it's explicitly gpt-4o or contains vision/gemini/gemma-3/pixtral/vl/llama-3.2
   const isVisionModel = selectedModel === 'gpt-4o' || 
                         selectedModel.includes('vision') || 

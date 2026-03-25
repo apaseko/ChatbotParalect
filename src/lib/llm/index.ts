@@ -16,10 +16,14 @@ export async function streamLLM(
       }
       return streamOpenAI(messages, documentContext, onComplete);
     case 'gemini-2.0-flash':
-      if (!process.env.GEMINI_API_KEY) {
-        throw new Error('Gemini API key not configured');
+      if (process.env.GEMINI_API_KEY) {
+        return streamGemini(messages, documentContext, onComplete);
       }
-      return streamGemini(messages, documentContext, onComplete);
+      // Fallback to OpenRouter for Gemini if direct key is missing
+      if (process.env.OPENAI_API_KEY && process.env.OPENAI_BASE_URL?.includes('openrouter.ai')) {
+        return streamOpenAI(messages, documentContext, onComplete, 'google/gemini-2.0-flash:free');
+      }
+      throw new Error('Gemini API key not configured');
     default:
       throw new Error(`Unsupported model: ${model}`);
   }
@@ -35,7 +39,7 @@ export function getAvailableModels(): { id: LLMModel; name: string; available: b
     {
       id: 'gemini-2.0-flash',
       name: 'Gemini 2.0 Flash',
-      available: !!process.env.GEMINI_API_KEY,
+      available: !!process.env.GEMINI_API_KEY || (!!process.env.OPENAI_API_KEY && !!process.env.OPENAI_BASE_URL?.includes('openrouter.ai')),
     },
   ];
 }
