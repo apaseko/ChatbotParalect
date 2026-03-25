@@ -64,15 +64,17 @@ export async function POST(
     const supabase = createServiceClient();
 
     // Verify chat belongs to user
-    const { data: chat } = await supabase
+    const { data: chat, error: chatError } = await supabase
       .from('chats')
       .select('*')
       .eq('id', chatId)
       .eq('user_id', user.id)
       .single();
 
-    if (!chat) {
-      return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
+    if (chatError || !chat) {
+      return NextResponse.json({ 
+        error: `Chat query failed: ${chatError?.message || 'Not found'} (ID: ${chatId})` 
+      }, { status: 404 });
     }
 
     // Check anonymous question limit
@@ -212,8 +214,10 @@ export async function POST(
         'X-User-Message-Id': userMessage.id,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Message error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: `Internal server error: ${error?.message || String(error)}` 
+    }, { status: 500 });
   }
 }
