@@ -49,10 +49,10 @@ export default function MessageList({ chatId, streamingMessage, streamContent }:
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              { icon: MessageSquare, title: 'Chat freely', desc: 'Ask me anything' },
-              { icon: Zap, title: 'Fast responses', desc: 'Streamed in real-time' },
-              { icon: ImageIcon, title: 'Image support', desc: 'Paste or attach images' },
-              { icon: Sparkles, title: 'Smart models', desc: 'GPT-4o & Gemini' },
+              { icon: MessageSquare, title: 'Ask anything', desc: 'Chat naturally with AI' },
+              { icon: Zap, title: 'Lightning fast', desc: 'Powered by Groq LPU' },
+              { icon: ImageIcon, title: 'Vision enabled', desc: 'Upload images for analysis' },
+              { icon: Sparkles, title: 'Smart models', desc: 'Llama 3.2 & Llama 3.3' },
             ].map((item, i) => (
               <div
                 key={i}
