@@ -2,12 +2,20 @@ import 'server-only';
 import { GoogleGenerativeAI, Content, Part } from '@google/generative-ai';
 import type { Message } from '@/types';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+let genAIClient: GoogleGenerativeAI | null = null;
+
+function getGenAI(): GoogleGenerativeAI {
+  if (!genAIClient) {
+    genAIClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy_key_for_build');
+  }
+  return genAIClient;
+}
 
 export async function streamGemini(
   messages: Message[],
   documentContext?: string
 ): Promise<ReadableStream<Uint8Array>> {
+  const genAI = getGenAI();
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
   const contents: Content[] = [];

@@ -2,9 +2,16 @@ import 'server-only';
 import OpenAI from 'openai';
 import type { Message } from '@/types';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let openaiClient: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_build',
+    });
+  }
+  return openaiClient;
+}
 
 interface LLMMessage {
   role: 'user' | 'assistant' | 'system';
@@ -48,6 +55,7 @@ export async function streamOpenAI(
     }
   }
 
+  const openai = getOpenAI();
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
     messages: formattedMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
