@@ -204,7 +204,9 @@ export async function POST(
           .update({ updated_at: new Date().toISOString() })
           .eq('id', chatId);
       }
-    })();
+    })().catch((err) => {
+      console.error('Background message save failed:', err);
+    });
 
     return new Response(streamForClient, {
       headers: {
