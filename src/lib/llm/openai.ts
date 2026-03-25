@@ -34,6 +34,7 @@ export async function streamOpenAI(
                         selectedModel.includes('gemma-3') ||
                         selectedModel.includes('pixtral') ||
                         selectedModel.includes('vl') ||
+                        selectedModel.includes('nemotron') ||
                         selectedModel.includes('llama-3.2');
   
   // Only OpenAI's own models (GPT/O1) are guaranteed to support the 'system' role correctly via the OpenAI SDK wrapper.
