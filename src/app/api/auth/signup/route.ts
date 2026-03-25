@@ -10,6 +10,8 @@ export async function POST(request: Request) {
     }
 
     const supabase = createServiceClient();
+
+    // 1. Create user via admin API
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -20,15 +22,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    // Create profile
-    await supabase.from('profiles').insert({
-      id: data.user.id,
-      email: data.user.email,
-      display_name: email.split('@')[0],
-      is_anonymous: false,
-    });
+    // 2. Create profile (non-blocking — don't fail signup if profiles table is missing)
+    try {
+      await supabase.from('profiles').insert({
+        id: data.user.id,
+        email: data.user.email,
+        display_name: email.split('@')[0],
+        is_anonymous: false,
+      });
+    } catch {
+      console.warn('Could not create profile — profiles table may not exist');
+    }
 
-    // Sign the user in to get a session
+    // 3. Sign in to get a session token
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -38,27 +44,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: signInError.message }, { status: 400 });
     }
 
-    // Check if there's an anonymous session to merge
+    // 4. Check if there's an anonymous session to merge
     const token = extractToken(request);
     if (token) {
-      const anonUser = await getUserFromToken(token);
-      if (anonUser) {
-        // Transfer anonymous chats to new user
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_anonymous')
-          .eq('id', anonUser.id)
-          .single();
+      try {
+        const anonUser = await getUserFromToken(token);
+        if (anonUser) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_anonymous')
+            .eq('id', anonUser.id)
+            .single();
 
-        if (profile?.is_anonymous) {
-          await supabase
-            .from('chats')
-            .update({ user_id: data.user.id })
-            .eq('user_id', anonUser.id);
+          if (profile?.is_anonymous) {
+            await supabase
+              .from('chats')
+              .update({ user_id: data.user.id })
+              .eq('user_id', anonUser.id);
 
-          // Clean up anonymous profile
-          await supabase.auth.admin.deleteUser(anonUser.id);
+            await supabase.auth.admin.deleteUser(anonUser.id);
+          }
         }
+      } catch {
+        console.warn('Anonymous merge failed — skipping');
       }
     }
 
@@ -69,7 +77,9 @@ export async function POST(request: Request) {
       },
       session: signInData.session,
     });
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (err) {
+    console.error('Signup error:', err);
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
