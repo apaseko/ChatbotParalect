@@ -8,6 +8,7 @@ function getOpenAI(): OpenAI {
   if (!openaiClient) {
     openaiClient = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_build',
+      baseURL: process.env.OPENAI_BASE_URL || undefined,
     });
   }
   return openaiClient;
@@ -57,7 +58,7 @@ export async function streamOpenAI(
 
   const openai = getOpenAI();
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: process.env.OPENAI_MODEL || 'gpt-4o',
     messages: formattedMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
     stream: true,
     max_tokens: 4096,
