@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useChats, useCreateChat, useDeleteChat, useUpdateChat } from '@/hooks/useChats';
 import { useUser, useLogout } from '@/hooks/useAuth';
-import { useRealtimeChats } from '@/hooks/useRealtime';
+import { useRealtimeChats, useRealtimeProfile } from '@/hooks/useRealtime';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
@@ -57,8 +57,10 @@ export default function Sidebar({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
 
-  // Subscribe to realtime chat changes
+
+  // Subscribe to realtime chat and profile changes
   useRealtimeChats(user?.id);
+  useRealtimeProfile(user?.id);
 
   const handleNewChat = async () => {
     try {

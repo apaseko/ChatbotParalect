@@ -137,6 +137,7 @@ export default function ChatArea({
         // Refresh messages from server
         queryClient.invalidateQueries({ queryKey: ['messages', currentChatId] });
         queryClient.invalidateQueries({ queryKey: ['chats'] });
+        queryClient.invalidateQueries({ queryKey: ['user'] });
       }
     },
     [chatId, queryClient, onCreateChat]

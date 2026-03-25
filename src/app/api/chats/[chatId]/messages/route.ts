@@ -113,6 +113,16 @@ export async function POST(
     if (msgError) {
       return NextResponse.json({ error: msgError.message }, { status: 500 });
     }
+ 
+    // Increment anonymous questions count synchronously to ensure UI updates immediately
+    if (profile?.is_anonymous) {
+      await supabase
+        .from('profiles')
+        .update({
+          anonymous_questions_used: (profile.anonymous_questions_used || 0) + 1,
+        })
+        .eq('id', user.id);
+    }
 
     // Get all messages for context
     const { data: allMessages } = await supabase
@@ -165,15 +175,7 @@ export async function POST(
             image_urls: [],
           });
 
-          // Increment anonymous questions count
-          if (profile?.is_anonymous) {
-            await supabase
-              .from('profiles')
-              .update({
-                anonymous_questions_used: (profile.anonymous_questions_used || 0) + 1,
-              })
-              .eq('id', user.id);
-          }
+
 
           // Update chat timestamp
           await supabase
