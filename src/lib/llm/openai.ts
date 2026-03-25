@@ -37,9 +37,9 @@ export async function streamOpenAI(
 
   // Add system message or extract it for merging
   if (documentContext) {
-    systemPrompt = `You are a helpful assistant. Use the following document context to answer questions when relevant:\n\n${documentContext}`;
+    systemPrompt = `You are a helpful assistant. Use the following document context to answer questions when relevant:\n\n${documentContext}\n\nRespond in the same language the user uses. Если пользователь пишет на русском, отвечай на русском.`;
   } else {
-    systemPrompt = 'You are a helpful assistant. Respond in markdown format when appropriate.';
+    systemPrompt = 'You are a helpful assistant. Always respond in the same language the user uses. Если пользователь пишет на русском, обязательно отвечай на русском. Respond in markdown format when appropriate.';
   }
 
   if (supportsSystem) {
