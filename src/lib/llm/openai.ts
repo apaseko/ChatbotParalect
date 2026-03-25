@@ -26,28 +26,43 @@ export async function streamOpenAI(
 ): Promise<ReadableStream<Uint8Array>> {
   const formattedMessages: LLMMessage[] = [];
 
-  // Add system message with document context if available
+  const selectedModel = process.env.OPENAI_MODEL || 'gpt-4o';
+  // We assume a model supports vision if it's explicitly gpt-4o or contains 'vision' or 'gemini' (most gemini models do)
+  const isVisionModel = selectedModel === 'gpt-4o' || selectedModel.includes('vision') || selectedModel.includes('gemini') || selectedModel.includes('gemma-3');
+  
+  // Some models (Gemma, some Gemini) on OpenRouter don't support the 'system' role
+  const supportsSystem = !selectedModel.includes('gemma') && !selectedModel.includes('gemini');
+
+  let systemPrompt = '';
+
+  // Add system message or extract it for merging
   if (documentContext) {
-    formattedMessages.push({
-      role: 'system',
-      content: `You are a helpful assistant. Use the following document context to answer questions when relevant:\n\n${documentContext}`,
-    });
+    systemPrompt = `You are a helpful assistant. Use the following document context to answer questions when relevant:\n\n${documentContext}`;
   } else {
+    systemPrompt = 'You are a helpful assistant. Respond in markdown format when appropriate.';
+  }
+
+  if (supportsSystem) {
     formattedMessages.push({
       role: 'system',
-      content: 'You are a helpful assistant. Respond in markdown format when appropriate.',
+      content: systemPrompt,
     });
   }
 
-  const selectedModel = process.env.OPENAI_MODEL || 'gpt-4o';
-  // We assume a model supports vision if it's explicitly gpt-4o or contains 'vision'
-  const isVisionModel = selectedModel === 'gpt-4o' || selectedModel.includes('vision');
-
   // Convert messages to OpenAI format
+  let firstUserMsgProcessed = false;
   for (const msg of messages) {
+    let content: string | OpenAI.Chat.Completions.ChatCompletionContentPart[] = msg.content;
+    
+    // Merge system prompt into first user message if system role isn't supported
+    if (!supportsSystem && !firstUserMsgProcessed && msg.role === 'user') {
+      content = `[System Instructions: ${systemPrompt}]\n\nUser Message: ${msg.content}`;
+      firstUserMsgProcessed = true;
+    }
+
     if (msg.image_urls && msg.image_urls.length > 0 && msg.role === 'user' && isVisionModel) {
       const parts: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
-        { type: 'text', text: msg.content },
+        { type: 'text', text: typeof content === 'string' ? content : msg.content },
       ];
       for (const url of msg.image_urls) {
         parts.push({
@@ -57,7 +72,7 @@ export async function streamOpenAI(
       }
       formattedMessages.push({ role: msg.role, content: parts });
     } else {
-      formattedMessages.push({ role: msg.role === 'assistant' ? 'assistant' : 'user', content: msg.content });
+      formattedMessages.push({ role: msg.role === 'assistant' ? 'assistant' : 'user', content: content as string });
     }
   }
 
