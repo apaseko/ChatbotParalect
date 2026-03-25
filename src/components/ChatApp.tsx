@@ -6,6 +6,7 @@ import ChatArea from '@/components/chat/ChatArea';
 import AuthModal from '@/components/auth/AuthModal';
 import { useUser } from '@/hooks/useAuth';
 import { useCreateChat } from '@/hooks/useChats';
+import { toast } from 'sonner';
 
 export default function ChatApp() {
   const { data: user, isLoading: userLoading } = useUser();
@@ -30,7 +31,9 @@ export default function ChatApp() {
     try {
       const result = await createChat.mutateAsync({});
       setActiveChatId(result.chat.id);
-    } catch {}
+    } catch (err: any) {
+      toast.error('Failed to create chat. Have you run the Supabase migration script?');
+    }
   }, [user, createChat]);
 
   // Called by ChatArea when user sends a message without an active chat
@@ -43,7 +46,8 @@ export default function ChatApp() {
       const result = await createChat.mutateAsync({});
       setActiveChatId(result.chat.id);
       return result.chat.id;
-    } catch {
+    } catch (err: any) {
+      toast.error('Failed to create chat. Have you run the Supabase migration script?');
       return null;
     }
   }, [user, createChat]);
@@ -61,7 +65,9 @@ export default function ChatApp() {
           window.location.reload();
         }
       }
-    } catch {}
+    } catch (err: any) {
+      toast.error('Guest access failed');
+    }
   }, []);
 
   // Check if anonymous user has used up questions
