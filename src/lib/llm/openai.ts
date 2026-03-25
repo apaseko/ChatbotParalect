@@ -36,8 +36,9 @@ export async function streamOpenAI(
                         selectedModel.includes('vl') ||
                         selectedModel.includes('llama-3.2');
   
-  // Some models (Gemma, some Gemini) on OpenRouter don't support the 'system' role
-  const supportsSystem = !selectedModel.includes('gemma') && !selectedModel.includes('gemini');
+  // Only OpenAI's own models (GPT/O1) are guaranteed to support the 'system' role correctly via the OpenAI SDK wrapper.
+  // Many models on OpenRouter (Google, Mistral, Qwen) prefer merging system instructions.
+  const supportsSystem = selectedModel.includes('gpt-') || selectedModel.includes('o1-') || selectedModel.includes('o3-');
 
   let systemPrompt = '';
 
