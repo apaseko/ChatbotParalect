@@ -33,6 +33,21 @@ export default function ChatApp() {
     } catch {}
   }, [user, createChat]);
 
+  // Called by ChatArea when user sends a message without an active chat
+  const handleCreateChat = useCallback(async (): Promise<string | null> => {
+    if (!user) {
+      setAuthOpen(true);
+      return null;
+    }
+    try {
+      const result = await createChat.mutateAsync({});
+      setActiveChatId(result.chat.id);
+      return result.chat.id;
+    } catch {
+      return null;
+    }
+  }, [user, createChat]);
+
   const handleGuestAccess = useCallback(async () => {
     try {
       const res = await fetch('/api/auth/anonymous', {
@@ -67,6 +82,7 @@ export default function ChatApp() {
       <ChatArea
         chatId={activeChatId}
         onToggleSidebar={() => setMobileMenuOpen(true)}
+        onCreateChat={handleCreateChat}
         disabled={isAnonymousLimitReached || false}
         disabledMessage={
           isAnonymousLimitReached

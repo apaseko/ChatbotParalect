@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 interface ChatAreaProps {
   chatId: string | null;
   onToggleSidebar: () => void;
+  onCreateChat: () => Promise<string | null>;
   disabled?: boolean;
   disabledMessage?: string;
 }
@@ -20,6 +21,7 @@ interface ChatAreaProps {
 export default function ChatArea({
   chatId,
   onToggleSidebar,
+  onCreateChat,
   disabled,
   disabledMessage,
 }: ChatAreaProps) {
@@ -31,19 +33,25 @@ export default function ChatArea({
 
   const handleSend = useCallback(
     async (content: string, imageUrls: string[], model: LLMModel) => {
-      if (!chatId) return;
+      let currentChatId = chatId;
+
+      // Auto-create a chat if none exists
+      if (!currentChatId) {
+        currentChatId = await onCreateChat();
+        if (!currentChatId) return;
+      }
 
       // Optimistically add user message to the list
       const userMessage: Message = {
         id: uuidv4(),
-        chat_id: chatId,
+        chat_id: currentChatId,
         role: 'user',
         content,
         image_urls: imageUrls,
         created_at: new Date().toISOString(),
       };
 
-      queryClient.setQueryData<Message[]>(['messages', chatId], (old) => [
+      queryClient.setQueryData<Message[]>(['messages', currentChatId], (old) => [
         ...(old || []),
         userMessage,
       ]);
@@ -51,7 +59,7 @@ export default function ChatArea({
       // Set up streaming state
       const assistantMessage: Message = {
         id: uuidv4(),
-        chat_id: chatId,
+        chat_id: currentChatId,
         role: 'assistant',
         content: '',
         image_urls: [],
@@ -63,7 +71,7 @@ export default function ChatArea({
       setIsStreaming(true);
 
       try {
-        const response = await fetch(`/api/chats/${chatId}/messages`, {
+        const response = await fetch(`/api/chats/${currentChatId}/messages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -120,11 +128,11 @@ export default function ChatArea({
         setStreamingMessage(null);
         setStreamContent('');
         // Refresh messages from server
-        queryClient.invalidateQueries({ queryKey: ['messages', chatId] });
+        queryClient.invalidateQueries({ queryKey: ['messages', currentChatId] });
         queryClient.invalidateQueries({ queryKey: ['chats'] });
       }
     },
-    [chatId, queryClient]
+    [chatId, queryClient, onCreateChat]
   );
 
   return (
