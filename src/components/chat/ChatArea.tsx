@@ -9,6 +9,7 @@ import { Menu } from 'lucide-react';
 import { authHeaders } from '@/hooks/useAuth';
 import type { Message, LLMModel } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'sonner';
 
 interface ChatAreaProps {
   chatId: string | null;
@@ -118,11 +119,9 @@ export default function ChatArea({
             }
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Send message error:', error);
-        setStreamContent(
-          (prev) => prev + '\n\n*Error: Failed to get response. Please try again.*'
-        );
+        toast.error(error.message || 'Failed to send message');
       } finally {
         setIsStreaming(false);
         setStreamingMessage(null);
