@@ -6,19 +6,20 @@ import type { Message, LLMModel } from '@/types';
 export async function streamLLM(
   model: LLMModel,
   messages: Message[],
-  documentContext?: string
+  documentContext?: string,
+  onComplete?: (fullContent: string) => void
 ): Promise<ReadableStream<Uint8Array>> {
   switch (model) {
     case 'gpt-4o':
       if (!process.env.OPENAI_API_KEY) {
         throw new Error('OpenAI API key not configured');
       }
-      return streamOpenAI(messages, documentContext);
+      return streamOpenAI(messages, documentContext, onComplete);
     case 'gemini-2.0-flash':
       if (!process.env.GEMINI_API_KEY) {
         throw new Error('Gemini API key not configured');
       }
-      return streamGemini(messages, documentContext);
+      return streamGemini(messages, documentContext, onComplete);
     default:
       throw new Error(`Unsupported model: ${model}`);
   }

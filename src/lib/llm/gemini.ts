@@ -13,7 +13,8 @@ function getGenAI(): GoogleGenerativeAI {
 
 export async function streamGemini(
   messages: Message[],
-  documentContext?: string
+  documentContext?: string,
+  onComplete?: (fullContent: string) => void
 ): Promise<ReadableStream<Uint8Array>> {
   const genAI = getGenAI();
   const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
@@ -64,10 +65,12 @@ export async function streamGemini(
 
   return new ReadableStream({
     async start(controller) {
+      let fullText = '';
       try {
         for await (const chunk of result.stream) {
           const content = chunk.text();
           if (content) {
+            fullText += content;
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
           }
         }
@@ -78,6 +81,10 @@ export async function streamGemini(
           encoder.encode(`data: ${JSON.stringify({ error: 'Stream error' })}\n\n`)
         );
         controller.close();
+      } finally {
+        if (onComplete && fullText) {
+          onComplete(fullText);
+        }
       }
     },
   });

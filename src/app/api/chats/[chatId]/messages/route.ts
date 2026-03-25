@@ -147,68 +147,46 @@ export async function POST(
     // Use the chat's model or override from request
     const selectedModel: LLMModel = model || chat.model || 'gpt-4o';
 
-    // Stream the response
-    const stream = await streamLLM(selectedModel, allMessages || [], documentContext);
+    // Stream the response with a background callback to save it when complete
+    const stream = await streamLLM(
+      selectedModel,
+      allMessages || [],
+      documentContext,
+      (fullContent: string) => {
+        // Run in background without awaiting, catch any errors quietly
+        (async () => {
+          if (!fullContent) return;
 
-    // Collect the entire response to save it 
-    const [streamForClient, streamForSave] = stream.tee();
+          // Save assistant message
+          await supabase.from('messages').insert({
+            chat_id: chatId,
+            role: 'assistant',
+            content: fullContent,
+            image_urls: [],
+          });
 
-    // Save response in background
-    const decoder = new TextDecoder();
-    (async () => {
-      let fullContent = '';
-      const reader = streamForSave.getReader();
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const text = decoder.decode(value);
-          const lines = text.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-              try {
-                const parsed = JSON.parse(line.slice(6));
-                if (parsed.content) {
-                  fullContent += parsed.content;
-                }
-              } catch {}
-            }
+          // Increment anonymous questions count
+          if (profile?.is_anonymous) {
+            await supabase
+              .from('profiles')
+              .update({
+                anonymous_questions_used: (profile.anonymous_questions_used || 0) + 1,
+              })
+              .eq('id', user.id);
           }
-        }
-      } finally {
-        reader.releaseLock();
-      }
 
-      // Save assistant message
-      if (fullContent) {
-        await supabase.from('messages').insert({
-          chat_id: chatId,
-          role: 'assistant',
-          content: fullContent,
-          image_urls: [],
-        });
-
-        // Increment anonymous questions count
-        if (profile?.is_anonymous) {
+          // Update chat timestamp
           await supabase
-            .from('profiles')
-            .update({
-              anonymous_questions_used: (profile.anonymous_questions_used || 0) + 1,
-            })
-            .eq('id', user.id);
-        }
-
-        // Update chat timestamp
-        await supabase
-          .from('chats')
-          .update({ updated_at: new Date().toISOString() })
-          .eq('id', chatId);
+            .from('chats')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', chatId);
+        })().catch((err) => {
+          console.error('Background message save failed:', err);
+        });
       }
-    })().catch((err) => {
-      console.error('Background message save failed:', err);
-    });
+    );
 
-    return new Response(streamForClient, {
+    return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',

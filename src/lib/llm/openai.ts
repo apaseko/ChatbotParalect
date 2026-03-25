@@ -21,7 +21,8 @@ interface LLMMessage {
 
 export async function streamOpenAI(
   messages: Message[],
-  documentContext?: string
+  documentContext?: string,
+  onComplete?: (fullContent: string) => void
 ): Promise<ReadableStream<Uint8Array>> {
   const formattedMessages: LLMMessage[] = [];
 
@@ -68,10 +69,12 @@ export async function streamOpenAI(
 
   return new ReadableStream({
     async start(controller) {
+      let fullText = '';
       try {
         for await (const chunk of response) {
           const content = chunk.choices[0]?.delta?.content;
           if (content) {
+            fullText += content;
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
           }
         }
@@ -82,6 +85,10 @@ export async function streamOpenAI(
           encoder.encode(`data: ${JSON.stringify({ error: 'Stream error' })}\n\n`)
         );
         controller.close();
+      } finally {
+        if (onComplete && fullText) {
+          onComplete(fullText);
+        }
       }
     },
   });
