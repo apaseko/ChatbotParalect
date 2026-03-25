@@ -185,8 +185,8 @@ export default function ChatInput({
         <div className="flex items-center gap-1">
           {/* Model selector */}
           <Select value={selectedModel} onValueChange={(v) => onModelChange(v as LLMModel)}>
-            <SelectTrigger className="w-[130px] h-9 bg-background/50 border-border/50 text-xs">
-              <SelectValue />
+            <SelectTrigger className="w-[130px] h-9 bg-background/50 border-border/50 text-xs font-medium">
+              {selectedModel === 'gpt-4o' ? 'Llama 3.2 Vision' : 'Gemini 2.0'}
             </SelectTrigger>
             <SelectContent className="bg-card/95 backdrop-blur-xl border-border/50">
               <SelectItem value="gpt-4o">Llama 3.2 Vision</SelectItem>
