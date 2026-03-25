@@ -39,9 +39,13 @@ export async function streamOpenAI(
     });
   }
 
+  const selectedModel = process.env.OPENAI_MODEL || 'gpt-4o';
+  // We assume a model supports vision if it's explicitly gpt-4o or contains 'vision'
+  const isVisionModel = selectedModel === 'gpt-4o' || selectedModel.includes('vision');
+
   // Convert messages to OpenAI format
   for (const msg of messages) {
-    if (msg.image_urls && msg.image_urls.length > 0 && msg.role === 'user') {
+    if (msg.image_urls && msg.image_urls.length > 0 && msg.role === 'user' && isVisionModel) {
       const parts: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [
         { type: 'text', text: msg.content },
       ];
@@ -53,13 +57,13 @@ export async function streamOpenAI(
       }
       formattedMessages.push({ role: msg.role, content: parts });
     } else {
-      formattedMessages.push({ role: msg.role, content: msg.content });
+      formattedMessages.push({ role: msg.role === 'assistant' ? 'assistant' : 'user', content: msg.content });
     }
   }
 
   const openai = getOpenAI();
   const response = await openai.chat.completions.create({
-    model: process.env.OPENAI_MODEL || 'gpt-4o',
+    model: selectedModel,
     messages: formattedMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
     stream: true,
     max_tokens: 4096,
