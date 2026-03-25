@@ -111,17 +111,25 @@ export async function POST(
       .single();
 
     if (msgError) {
+      console.error(`[API] Message save failed for chat ${chatId}:`, msgError);
       return NextResponse.json({ error: msgError.message }, { status: 500 });
     }
  
+    console.log(`[API] Message saved for chat ${chatId}. User: ${user.id}`);
+
     // Increment anonymous questions count synchronously to ensure UI updates immediately
     if (profile?.is_anonymous) {
-      await supabase
-        .from('profiles')
-        .update({
-          anonymous_questions_used: (profile.anonymous_questions_used || 0) + 1,
-        })
-        .eq('id', user.id);
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            anonymous_questions_used: (profile.anonymous_questions_used || 0) + 1,
+          })
+          .eq('id', user.id);
+      } catch (e) {
+        console.error('[API] Failed to increment question counter:', e);
+        // We continue anyway so the user gets their response
+      }
     }
 
     // Get all messages for context
@@ -198,10 +206,11 @@ export async function POST(
     });
   } catch (error: any) {
     console.error('Message error:', error);
-    // Return a 200 with error field to prevent Railway/Cloudflare from intercepting 500s as 503 Service Unavailable
+    // Reverted to 500 because frontend now handles non-JSON errors gracefully.
+    // This ensures !response.ok triggers correctly in the client.
     return NextResponse.json({ 
-      error: `API Error: ${error?.message || String(error)}`,
-      details: error?.error || null
-    }, { status: 200 });
+      error: `API Failure: ${error?.message || String(error)}`,
+      status: error?.status || 500
+    }, { status: error?.status || 500 });
   }
 }

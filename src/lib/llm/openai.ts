@@ -85,11 +85,16 @@ export async function streamOpenAI(
   }
 
   const openai = getOpenAI();
+  console.log(`[LLM] Requesting ${selectedModel} (Supports System: ${supportsSystem}, Vision: ${isVisionModel})`);
+  
   const response = await openai.chat.completions.create({
     model: selectedModel,
     messages: formattedMessages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
     stream: true,
     max_tokens: 4096,
+  }).catch(err => {
+    console.error(`[LLM] Error creating completion:`, err);
+    throw err;
   });
 
   const encoder = new TextEncoder();
