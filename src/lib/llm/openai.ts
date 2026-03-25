@@ -27,8 +27,14 @@ export async function streamOpenAI(
   const formattedMessages: LLMMessage[] = [];
 
   const selectedModel = process.env.OPENAI_MODEL || 'gpt-4o';
-  // We assume a model supports vision if it's explicitly gpt-4o or contains 'vision' or 'gemini' (most gemini models do)
-  const isVisionModel = selectedModel === 'gpt-4o' || selectedModel.includes('vision') || selectedModel.includes('gemini') || selectedModel.includes('gemma-3');
+  // We assume a model supports vision if it's explicitly gpt-4o or contains vision/gemini/gemma-3/pixtral/vl/llama-3.2
+  const isVisionModel = selectedModel === 'gpt-4o' || 
+                        selectedModel.includes('vision') || 
+                        selectedModel.includes('gemini') || 
+                        selectedModel.includes('gemma-3') ||
+                        selectedModel.includes('pixtral') ||
+                        selectedModel.includes('vl') ||
+                        selectedModel.includes('llama-3.2');
   
   // Some models (Gemma, some Gemini) on OpenRouter don't support the 'system' role
   const supportsSystem = !selectedModel.includes('gemma') && !selectedModel.includes('gemini');
