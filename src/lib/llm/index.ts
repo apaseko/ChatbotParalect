@@ -28,7 +28,7 @@ export function getAvailableModels(): { id: LLMModel; name: string; available: b
   return [
     {
       id: 'gpt-4o',
-      name: process.env.OPENAI_MODEL || 'GPT-4o',
+      name: process.env.OPENAI_MODEL || 'Llama 3.2 Vision',
       available: !!process.env.OPENAI_API_KEY,
     },
     {

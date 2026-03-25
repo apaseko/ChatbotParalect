@@ -149,7 +149,7 @@ export default function ChatArea({
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-sm font-medium text-muted-foreground">
-            {selectedModel === 'gpt-4o' ? (process.env.NEXT_PUBLIC_OPENAI_MODEL || 'GPT-4o') : 'Gemini 2.0 Flash'}
+            {selectedModel === 'gpt-4o' ? (process.env.NEXT_PUBLIC_OPENAI_MODEL || 'Llama 3.2 Vision') : 'Gemini 2.0 Flash'}
           </span>
         </div>
       </div>
