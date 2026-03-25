@@ -65,6 +65,43 @@ export default function ChatInput({
     }
   };
 
+  const processImage = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        const img = new Image();
+        img.onload = () => {
+          const MAX_SIZE = 1024;
+          let { width, height } = img;
+
+          if (width > MAX_SIZE || height > MAX_SIZE) {
+            if (width > height) {
+              height = Math.round((height *= MAX_SIZE / width));
+              width = MAX_SIZE;
+            } else {
+              width = Math.round((width *= MAX_SIZE / height));
+              height = MAX_SIZE;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve(result);
+
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.8)); // 80% quality JPEG
+        };
+        img.onerror = () => resolve(result);
+        img.src = result;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handlePaste = useCallback(
     async (e: React.ClipboardEvent) => {
       const items = e.clipboardData?.items;
@@ -77,33 +114,32 @@ export default function ChatInput({
           const file = item.getAsFile();
           if (!file) continue;
 
-          // Convert to base64 Data URL
-          const reader = new FileReader();
-          reader.onload = () => {
-            const dataUrl = reader.result as string;
+          try {
+            const dataUrl = await processImage(file);
             setAttachedImages((prev) => [...prev, dataUrl]);
-          };
-          reader.readAsDataURL(file);
+          } catch (err) {
+            console.error('Image compression failed', err);
+          }
         }
       }
     },
     []
   );
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach((file) => {
+    for (const file of Array.from(files)) {
       if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const dataUrl = reader.result as string;
+        try {
+          const dataUrl = await processImage(file);
           setAttachedImages((prev) => [...prev, dataUrl]);
-        };
-        reader.readAsDataURL(file);
+        } catch (err) {
+          console.error('Image compression failed', err);
+        }
       }
-    });
+    }
 
     e.target.value = '';
   };
